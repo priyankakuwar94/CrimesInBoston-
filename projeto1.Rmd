@@ -1,0 +1,143 @@
+---
+title: "Projeto 1 - Crimes in Boston"
+author: Vitor Juliani
+date: September 25, 2019
+output: html_notebook
+---
+```{r}
+# Importe os dados para um dataframe em R.
+crimes <- read.csv(file.path("C:/Users/HP Elitebook 745/Desktop/R/projeto 1/csv/crime.csv"), header = TRUE, blank.lines.skip = TRUE)
+```
+```{r}
+# Avalie as colunas disponíveis no dataset.
+
+# numero de colunas
+ncol(crimes)
+```
+```{r}
+# nome e tipo de cada coluna
+sapply(crimes, class)
+```
+```{r}
+# numero de linhas da coluna
+nrow(crimes)
+```
+```{r}
+# Verifique se existem espaços vazios.
+any(is.na(crimes))
+```
+```{r}
+# quantidade de campos nulos no data set
+sum(is.na(crimes))
+```
+```{r}
+# retirada dos campos nulos
+crimes <- na.omit(crimes)
+```
+```{r}
+# para o crime de assassinato, drogas e furto, plote um grafico que apresente indices de acordo com os horarios do dia (independente do ano)
+library(ggplot2)
+library(dplyr)
+
+crimesFilter <- filter(crimes, OFFENSE_CODE_GROUP  %in% c("Drug Violation", "Larceny", "Homicide"))
+
+countsByHour <- table(crimesFilter$OFFENSE_CODE_GROUP, crimesFilter$HOUR)
+
+barplot(countsByHour, main = "FREQUENCY OF CRIMES X HOUR", xlab = "HOUR", ylab = "FREQUENCY OF CRIMES", col = c ("Yellow", "Red", "Blue"))
+legend("topleft", inset = .05, legend=c("Drug Violation", "Larceny", "Homicide"),
+       fill=c("Yellow", "Red", "Blue"))
+```
+```{r}
+# para o crime de assassinato, drogas e furto, plote um grafico que apresente indices de acordo com os dias da semana (independente do ano)
+
+crimesFilter <- filter(crimes, OFFENSE_CODE_GROUP  %in% c("Drug Violation", "Larceny", "Homicide"))
+
+countsByDayWeek <- table(crimesFilter$OFFENSE_CODE_GROUP, crimesFilter$DAY_OF_WEEK)
+
+barplot(countsByDayWeek, main = "FREQUENCY OF CRIMES X DAY OF WEEK", xlab = "DAY OF WEEK", ylab = "FREQUENCY OF CRIMES", col = c ("Yellow", "Red", "Blue"), width = 0.5)
+legend("bottomright", inset = .05, legend=c("Drug Violation", "Larceny", "Homicide"),
+       fill=c("Yellow", "Red", "Blue"))
+```
+```{r}
+# para o crime de assassinato, drogas e furto, plote um grafico de pontos (latitude e longitude), apresentando locais onde ocorrem mais crimes. 
+
+crimesFilterDrugViolation <- filter(crimes, OFFENSE_CODE_GROUP  %in% c("Drug Violation"))
+
+# devido outliers, é removido as ruas com longitude igual a -1 
+crimesFilterDrugViolation <- crimesFilterDrugViolation[which(crimesFilterDrugViolation$Long != -1),]
+
+
+crimesFiterLarceny <- filter(crimes, OFFENSE_CODE_GROUP %in% c("Larceny"))
+
+# o mesmo acontece com o plot do grafico de larceny
+crimesFiterLarceny <- crimesFiterLarceny[which(crimesFiterLarceny$Long != -1), ]
+
+crimesFilterHomicide <- filter(crimes, OFFENSE_CODE_GROUP %in% c("Homicide"))
+
+ggplot(crimesFilterDrugViolation) +
+  geom_point(aes(Lat, Long, color = DISTRICT)) +
+  xlab("LATITUDE") +
+  ylab("LONGITUDE") +
+  ggtitle("DRUG VIOLATION LOCALIZATION")
+
+ggplot(crimesFiterLarceny) +
+  geom_point(aes(Lat, Long, color = DISTRICT)) +
+  xlab("LATITUDE") +
+  ylab("LONGITUDE") +
+  ggtitle("LARCENY LOCALIZATION")
+
+ggplot(crimesFilterHomicide) +
+  geom_point(aes(Lat, Long, color = DISTRICT)) +
+  xlab("LATITUDE") +
+  ylab("LONGITUDE") +
+  ggtitle("HOMICIDE LOCALIZATION")
+```
+<h2> Comentário </h2>
+<p>Com a análise dos gráficos plotados com os crimes de homicidio, roubo e drogas dentre as localizações, é possível visualizar que as áreas dentro da latitude 42.30 e 42.35 e longitude -71.10 e -71.05 concentram a maior quantidade dos crimes selecionados dentro de Boston, em regiões com maior concentração de pessoas.</p>
+
+```{r}
+#para os crimes tratados anteriormente, plote séries temporais que apresentam como estes crimes tem evoluído ao longo dos anos, no geral
+
+library(ggplot2)
+library(dplyr)
+
+# recebendo a ocorrencia de cada crime por ano
+data_by_year <- as.data.frame(table(crimes$OFFENSE_CODE_GROUP, crimes$YEAR))
+
+# alterando o nome das colunas
+names(data_by_year) = c("code", "year", "freq")
+
+# realizando o filtro dentro da table para conter apenas os crimes desejados
+data_by_year <- filter(data_by_year, code %in% c("Drug Violation", "Homicide", "Larceny"))
+
+# plot do grafico com agrupando pelo codigo 
+ggplot(data_by_year) +
+  geom_line(aes(year, freq, color = code, group = code)) +
+  xlab("YEARS") +
+  ylab("FREQUENCY") +
+  ggtitle("TEMPORAL SERIES BY CRIMES")
+```
+```{r}
+
+# recebendo a ocorrencia de crimes em cada distrito em um objeto district
+district <- as.data.frame(table(crimes$DISTRICT))
+
+# reordenando o objeto e selecionando apenas os 3 primeiros itens
+dangerous_district <- district[order(district$Freq, decreasing= TRUE),]
+dangerous_district <- dangerous_district[1:3,]
+
+# recebendo uma table para conter os distritos e sua frequencia por ano
+top_dangerous <- as.data.frame(table(crimes$DISTRICT, crimes$YEAR))
+
+# renomeando as colunas
+names(top_dangerous) = c("district", "year", "freq")
+
+# fazendo o filtro para conter apenas os 3 distritos mais perigosos
+top_dangerous <- filter(top_dangerous, district %in% dangerous_district$Var1)
+
+# plot do grafico
+ggplot(top_dangerous) + 
+  geom_line(aes(year, freq, group = district, color = district))
+```
+<h2> Comentário </h2>
+  <p>Partindo da análise da linha temporal dos distritos mais perigosos de Boston, observa-se um aumento significativo a partir do ano de 2015, chegando em um máximo em 2016 onde inicia sua leve queda para 2017, que, para 2018, tem sua maior queda</p>
