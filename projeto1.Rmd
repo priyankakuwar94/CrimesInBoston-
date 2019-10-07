@@ -75,21 +75,21 @@ crimesFiterLarceny <- crimesFiterLarceny[which(crimesFiterLarceny$Long != -1), ]
 crimesFilterHomicide <- filter(crimes, OFFENSE_CODE_GROUP %in% c("Homicide"))
 
 ggplot(crimesFilterDrugViolation) +
-  geom_point(aes(Lat, Long, color = DISTRICT)) +
-  xlab("LATITUDE") +
-  ylab("LONGITUDE") +
+  geom_point(aes(Long, Lat,  color = DISTRICT)) +
+  xlab("LONGITUDE") +
+  ylab("LATITUDE") +
   ggtitle("DRUG VIOLATION LOCALIZATION")
 
 ggplot(crimesFiterLarceny) +
-  geom_point(aes(Lat, Long, color = DISTRICT)) +
-  xlab("LATITUDE") +
-  ylab("LONGITUDE") +
+  geom_point(aes(Long, Lat, color = DISTRICT)) +
+  xlab("LONGITUDE") +
+  ylab("LATITUDE") +
   ggtitle("LARCENY LOCALIZATION")
 
 ggplot(crimesFilterHomicide) +
-  geom_point(aes(Lat, Long, color = DISTRICT)) +
-  xlab("LATITUDE") +
-  ylab("LONGITUDE") +
+  geom_point(aes(Long, Lat, color = DISTRICT)) +
+  xlab("LONGITUDE") +
+  ylab("LATITUDE") +
   ggtitle("HOMICIDE LOCALIZATION")
 ```
 <h2> Comentário </h2>
@@ -97,9 +97,6 @@ ggplot(crimesFilterHomicide) +
 
 ```{r}
 #para os crimes tratados anteriormente, plote séries temporais que apresentam como estes crimes tem evoluído ao longo dos anos, no geral
-
-library(ggplot2)
-library(dplyr)
 
 # recebendo a ocorrencia de cada crime por ano
 data_by_year <- as.data.frame(table(crimes$OFFENSE_CODE_GROUP, crimes$YEAR))
@@ -111,13 +108,18 @@ names(data_by_year) = c("code", "year", "freq")
 data_by_year <- filter(data_by_year, code %in% c("Drug Violation", "Homicide", "Larceny"))
 
 # plot do grafico com agrupando pelo codigo 
-ggplot(data_by_year) +
-  geom_line(aes(year, freq, color = code, group = code)) +
+ggplot(data_by_year, aes(year, freq, color = code, group = code)) +
+  geom_line() +
+  geom_point() +
   xlab("YEARS") +
   ylab("FREQUENCY") +
-  ggtitle("TEMPORAL SERIES BY CRIMES")
+  ggtitle("TEMPORAL SERIES BY CRIMES") +
+  scale_y_continuous(trans = "log10")
 ```
+<h2> Comentário </h2>
+  <p>A partir da análise, observa-se uma constante entre os anos de 2015 a 2018 para o crime de homicídio. Já para o crime relacionado a drogas existe um aumento de 2015 para 2016 e após isso, uma queda vertiginosa até 2018. Enquanto isso, para furto, temos uma crescente para o ano de 2016, para 2017 uma leve queda e para 2018 uma queda significativa</p>
 ```{r}
+#para os crimes tratados anteriormente, plote séries temporais que apresentam como estes crimes tem evoluído ao longo dos anos, para as 3 regiões com maior incidente de crimes
 
 # recebendo a ocorrencia de crimes em cada distrito em um objeto district
 district <- as.data.frame(table(crimes$DISTRICT))
@@ -126,18 +128,24 @@ district <- as.data.frame(table(crimes$DISTRICT))
 dangerous_district <- district[order(district$Freq, decreasing= TRUE),]
 dangerous_district <- dangerous_district[1:3,]
 
+# realizando o filtro do dataset original para conter os distritos mais perigosos e os crimes selecionados
+top_dangerous <- filter(crimes, DISTRICT %in% dangerous_district$Var1 & OFFENSE_CODE_GROUP %in% c("Homicide","Larceny","Drug Violation"))
+
 # recebendo uma table para conter os distritos e sua frequencia por ano
-top_dangerous <- as.data.frame(table(crimes$DISTRICT, crimes$YEAR))
+top_dangerous <- as.data.frame(table(top_dangerous$OFFENSE_CODE_GROUP, top_dangerous$YEAR))
+top_dangerous <- filter(top_dangerous, Var1 %in% c("Homicide","Larceny","Drug Violation"))
 
 # renomeando as colunas
-names(top_dangerous) = c("district", "year", "freq")
-
-# fazendo o filtro para conter apenas os 3 distritos mais perigosos
-top_dangerous <- filter(top_dangerous, district %in% dangerous_district$Var1)
+names(top_dangerous) = c("code", "year", "freq")
 
 # plot do grafico
-ggplot(top_dangerous) + 
-  geom_line(aes(year, freq, group = district, color = district))
+ggplot(top_dangerous, aes(year, freq, group = code, color = code)) + 
+  geom_line() +
+  geom_point() +
+  ggtitle("TEMPORAL SERIES IN TOP THREE DANGEROUS DISTRICT") +
+  xlab("YEAR") +
+  ylab("FREQUENCY") +
+  scale_y_continuous(trans = "log10")
 ```
 <h2> Comentário </h2>
   <p>Partindo da análise da linha temporal dos distritos mais perigosos de Boston, observa-se um aumento significativo a partir do ano de 2015, chegando em um máximo em 2016 onde inicia sua leve queda para 2017, que, para 2018, tem sua maior queda</p>
